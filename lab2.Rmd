@@ -1,0 +1,246 @@
+---
+title: "Lab 2"
+author: "Y. Samuel Wang"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intro
+
+This lab will explore multiple linear regression and including polynomial terms.
+
+## Housing Data
+
+In class, we fit a few models using the housing data that we've been considering in lecture. In lab, we'll take a deeper dive into the data set. First, let's load the data
+
+```{r}
+fileName <- url("https://raw.githubusercontent.com/ysamwang/btry6020_sp22/main/lectureData/estate.csv")
+housing_data <- read.csv(fileName)
+
+head(housing_data)
+View(housing_data)
+```
+
+Recall that there are 522 observations with the following variables:
+
+-   price: in 2002 dollars
+-   area: Square footage
+-   bed: number of bedrooms
+-   bath: number of bathrooms
+-   ac: central AC (yes/no)
+-   garage: number of garage spaces
+-   pool: yes/no
+-   year: year of construction
+-   quality: high/medium/low
+-   home style: coded 1 through 7
+-   lot size: sq ft
+-   highway: near a highway (yes/no)
+
+There is no age data in the table, but we can compute it on our own from the year variable
+
+```{r}
+housing_data$age <- 2002 - housing_data$year
+```
+
+## Polynomial regression
+
+We can first fit a linear model to both the data using the age of the house.
+
+```{r}
+reg_linear <- lm(price ~ age, data = housing_data)
+
+
+
+par(mfrow = c(1,2), mar = c(4, 4, 1, 1))
+plot(housing_data$age, housing_data$price, cex.lab = .5, cex.axis = .5,
+     cex = .5, main = "Untransformed data", xlab = "age", ylab = "price")
+abline(a = reg_linear$coef[1], b = reg_linear$coef[2], col = "gray", lwd = 2)
+plot(housing_data$age, reg_linear$res, cex.lab = .5, cex.axis = .5,
+     cex = .5, main = "Untransformed data", xlab = "age", ylab = "residuals")
+abline(h = 0, col = "red")
+```
+
+## Questions
+
+-   Does it look like the linear model is a good fit for the data? Why or why not?
+
+As an alternative, we can also use polynomial regression. Let's include the covariate of age squared.
+
+```{r}
+## R requires you to use I(age^2) instead of just including age^2 
+reg_quad1 <- lm(price ~ age + I(age^2), data = housing_data)
+summary(reg_quad1)
+```
+
+The variables, age and age squared will be quite correlated, which as we will see on Wednesday can be a bad thing. So we typically will want to use a transformation of the polynomial covariates which are not as highly correlated. We will use the `poly` function which takes the covariate and the degree of the polynomial (in this case 2) and return a set of covariates which act like age and age squared, but are not correlated. It's also easier to type out instead of including a bunch of terms by hand. The coefficients aren't directly interpretable since the covariates aren't exactly age and age squared anymore, but we can see that they give the same fitted values as before.
+
+```{r}
+reg_quad2 <- lm(price ~ poly(age,2), data = housing_data)
+summary(reg_quad2)
+sum(abs(reg_quad1$fitted.values - reg_quad2$fitted.values)) 
+```
+
+We can compare the RSS of the linear model and the model which includes the quadratic term:
+
+```{r}
+sum((housing_data$price - reg_linear$fitted.values)^2) 
+sum((housing_data$price - reg_quad2$fitted.values)^2)
+```
+
+Alternatively, we can calculate the $R^2$ of each model:
+
+```{r}
+summary(reg_linear)$r.squared
+summary(reg_quad1)$r.squared
+summary(reg_quad2)$r.squared
+```
+
+We can also plot the fitted prices for each model. For this, we will use the `predict` function. The `predict` function takes an `lm` object and a data frame of covariate observations. It then computes the predicted value of the covariate observations based on the coefficients estimated in the `lm` object.
+
+```{r}
+
+plot(housing_data$age, housing_data$price, xlab = "age", ylab = "price")
+lines(2:120, predict(reg_linear, data.frame(age = 2:120)),
+      col = "cyan", lwd = 3)
+lines(2:120, predict(reg_quad1, data.frame(age = 2:120)),
+      col = "navy", lwd = 3)
+legend("topright", col = c( "cyan", "navy"),
+       legend = c("linear", "quadratic"), lwd = 2)
+
+
+```
+
+#### Question:
+
+-   With your neighbors, discuss which model you would use if you were fitting the data?
+-   What if you were trying to explain this model to a collaborator?
+-   What if you were just trying to predict what you should sell your house for?
+-   What if the house you are selling is 150 years old?
+
+\newpage
+
+Can we improve the quadratic model? Let's see if we can just fit higher polynomials to the data. Using a 3rd degree polynomial is called a cubic and using a 4th degree polynomial is called a quartic.
+
+```{r}
+reg_cubic <- lm(price ~ poly(age,3), data = housing_data)
+reg_quartic <- lm(price ~ poly(age,4), data = housing_data)
+
+summary(reg_quad2)
+summary(reg_cubic)
+summary(reg_quartic)
+
+plot(housing_data$age, housing_data$price, xlab = "age", ylab = "price")
+
+lines(2:120, predict(reg_linear, data.frame(age = 2:120)),
+      col = "cyan", lwd = 3)
+lines(2:120, predict(reg_quad1, data.frame(age = 2:120)),
+      col = "navy", lwd = 3)
+lines(2:120, predict(reg_cubic, data.frame(age = 2:120)),
+      col = "red", lwd = 3)
+lines(2:120, predict(reg_quartic, data.frame(age = 2:120)),
+      col = "purple", lwd = 3)
+legend("topright", col = c("cyan", "navy", "red", "purple"),
+       legend = c("linear", "quadratic", "cubic", "quartic"), lwd = 2)
+
+```
+
+#### Question:
+
+-   Examine the RSS for each of the models. Each time we fit a higher order polynomial, the RSS decreases. Will this always be the case or is it just a coincidence? Why do you think so?
+-   How would you decide which model to use?
+
+\newpage
+
+# Multiple Linear Regression
+
+The rest of today's lab will have less instruction, so it is on you, as a budding statistician to provide a bit of creativity and apply what we have learned so far. In addition, we will use this data set for the module 2 assessment.
+
+We will be looking at recent data from the UK Brexit vote. If you, aren't familiar you can read more about the whole story here <http://www.vox.com/2016/6/17/11963668/brexit-uk-eu-explained>.
+
+In particular, the response variable we will be using is the percentage of individuals who voted to remain in the European Union in each local authority. We will be looking at several explanatory variables including
+
+-   Percentage of individuals born in the UK
+-   Percentage of individuals with no formal education beyond compulsory education
+-   Percentage of individuals working in manufacturing
+-   Percentage of individuals working in finance
+-   Percentage of individuals over the age of 60
+-   Percentage of individuals between the ages of 20 and 35
+
+Each row in the data represents a local authority/distict in either England or Wales. The Brexit vote took place in 2016, and the explanatory variables were collected in the 2011 census. Local Authorities with missing data have been removed.
+
+```{r}
+brexit.data <- read.csv("https://raw.githubusercontent.com/ysamwang/btry6020_sp22/main/lab2/uk_data.csv")
+head(brexit.data)
+```
+
+### Questions
+
+-   What direction do you think the association is between each of these variables?
+-   What strength do you think the association is between each of these variables?
+
+Again, we'll use the `pairs` command to plot the many pairs of variables at once. Note that we've excluded the first column here, since that's just the name of local authority
+
+```{r}
+pairs(brexit.data[,-1])
+```
+
+### Questions
+
+-   Does this look like what you might expect?
+-   What sticks out?
+-   Do the relationships look roughly linear?
+
+## Multivariate Regression
+
+When there are multiple variables, we still use the regular `lm` command, but we need to specify more variables in our formula. Notice now on the right hand side of the $\sim$, we have multiple variables which are separated by the $+$ sign. We can add additional variables simply by using the $+$ sign.
+
+```{r}
+output <- lm(pct_remain ~ uk_born + no_edu, data = brexit.data)
+summary(output)
+```
+
+We can see from the summary of our model that the estimated model is $$\hat y_i = \hat b_0 + \hat b_{\text{uk born}} x_{i, \text{uk born}} + \hat b_{\text{no edu}} x_{i, \text{no edu}} $$ where $b_{uk\_born} = -.33$ and $b_{no\_edu} = -1.20$.
+
+We can get the residuals and fitted values from the `lm` objects, and we can look at the values for specific geographic areas. For instance, "Eden" is the 23 row in the list. We can see that by using the `which` function. The function returns the index for which the statement evalues to "TRUE." This means the 23rd element of geography vector is equal to "Eden." In the residual and fitted values vector, the 23rd element corresponds to the values for "Eden"
+
+```{r}
+which(brexit.data$geography == "Eden")
+output$residuals[23]
+output$fitted.values[23]
+```
+
+### Questions
+
+-   How would you interpret each of the estimated coefficients above?
+-   Does the magnitude (size) of the coefficients agree with what you would've guessed?
+
+Now is your chance to explore the data yourself. Using the form above, fit a regression and include variables which you think might be associated with the percentage of people voting to remain in the EU. As you fit your models, check to make sure that the associations are roughly linear.
+
+Try fitting multiple models (at least 3 or 4) and think about what makes sense to investigate and what variables might need transformations.
+
+### Questions
+
+-   Look at the $R^2$ value for each model. As you include more variables, what happens to the $R^2$ value? Does this always happen?
+-   When you include more variables, how do the regression coefficients change for the existing variables?
+
+After you are done, discuss your findings with your neighbor and pat yourself on the back. Congratulations, you're on your way to being a statistician!
+
+### Questions
+
+Questions to discuss with your neighbor.
+
+-   How did you decide which variables to include and which variables not to include?
+-   What is the proper interpretation of your regression coefficients?
+-   What are the signs of each of the coefficients?
+-   What are the relative sizes of the coefficients?
+-   Does this make sense with what we know about the world?
+-   What would we need to be careful about in interpreting these models?
+-   What other variables (that weren't available) would also be good to include?
+
+```{r}
+full_mod <- lm(pct_remain ~ . - geography , data = brexit.data)
+summary(full_mod)
+```
