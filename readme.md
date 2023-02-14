@@ -10,7 +10,7 @@ There are a couple of special files in this repository:
 * `Labs.Rproj`: this is the RStudio Project file for this repository. RStudio Projects are a helpful way of organizing the directories you use for R programming, and are helpful when working with GitHub. They will not be necessary for you to know about for this class for now, and probably will not be required at any poihnt. However, if you're curious, [this blog post](https://www.r-bloggers.com/2020/01/rstudio-projects-and-working-directories-a-beginners-guide/) can tell you more about them. 
 * `readme.md`: you're reading this one right now!
 
-As the course goes on, I plan to add more code to this repository for easy reference. `.R` files are R code files, and `.Rmd` files are RMarkdown files. There will likely be pdf files associated with the .Rmd files, but I may also add those to the `.gitignore` so that they do not end up on this repository, in which case you would need to copy and paste the file into your computer and knit it to see the pdf output. 
+As the course goes on, I plan to add more code to this repository for easy reference. `.R` files are R code files, and `.Rmd` files are RMarkdown files, and the .pdf files are the compiled pdf files from RMarkdown. 
 
 ## Helpful links
 
