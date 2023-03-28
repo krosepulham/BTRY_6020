@@ -8,22 +8,23 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-#  Housing Data
+
+# Housing Data
+
 For this lab, we will consider the housing data again. So far, we have discussed various models for predicting price, but now we will compare various models against each other. As a quick refresher, recall that there are 522 observations with the following variables:
 
-* price: in 2002 dollars
-* area: Square footage
-* bed: number of bedrooms
-* bath: number of bathrooms
-* ac: central AC (yes/no)
-* garage: number of garage spaces
-* pool: yes/no
-* year: year of construction
-* quality: high/medium/low
-* home style: coded 1 through 7
-* lot size: sq ft 
-* highway: near a highway (yes/no)
-
+-   price: in 2002 dollars
+-   area: Square footage
+-   bed: number of bedrooms
+-   bath: number of bathrooms
+-   ac: central AC (yes/no)
+-   garage: number of garage spaces
+-   pool: yes/no
+-   year: year of construction
+-   quality: high/medium/low
+-   home style: coded 1 through 7
+-   lot size: sq ft
+-   highway: near a highway (yes/no)
 
 ```{r}
 fileName <- "https://raw.githubusercontent.com/ysamwang/btry6020_sp22/main/lectureData/estate.csv"
@@ -34,14 +35,18 @@ housing_data$age <- 2002-housing_data$year
 ```
 
 \newpage
-#  Cross Validation
-##  Data Splitting
+
+# Cross Validation
+
+## Data Splitting
+
 We will now compare a few different models using cross validation. Notice that each time we include a new variable, the RSS never increases.
+
 ```{r}
 # Fix the way of randomly splitting the data, 
 # such that each time you run will provide same results (optional),
 # 1 in set.seed(1) can be set with any number. 
-set.seed(1)
+set.seed(1011)
 
 # Sample splitting 70% training and 30% test
 # sample size
@@ -90,19 +95,22 @@ pred_error_4
 
 ```
 
-###  Questions: 
-1. Compare the models above. Which one is best for prediction? Are there other considerations you would consider when choosing a model? 
-2. Try on your own: choose different number you like in "set.seed()" function, and re-run the procedure above. Which one is better based on your own results?
+### Questions:
 
-##  K-fold Cross Validation
+1.  Compare the models above. Which one is best for prediction? Are there other considerations you would consider when choosing a model?
+2.  Try on your own: choose different number you like in "set.seed()" function, and re-run the procedure above. Which one is better based on your own results?
+
+## K-fold Cross Validation
+
 One-time sample-splitting results above highly depend on the random selection of the training and test set. K-fold Cross Validation is a procedure to alleviate such randomness. Besides, computationally K-fold Cross Validation is much more feasible than leave-one-out Cross Validation (LOOCV).
 
 In the K-fold Cross Validation, here we set K=5. which means we split the data into 5 qual sized subsets. Then for each k=1,...,5, hold out the $k$th subset and train the model based on the other 4 subsets, calculate $k$th fold mean square error (MSE) as $MSE_k$. Finally obtain the total MSE by averaging $MSE_k, k=1,...,5$.
 
-K-fold Cross Validation can be done manually, but can also be implemented using "glm" functions. 
+K-fold Cross Validation can be done manually, but can also be implemented using "glm" functions.
 
 ```{r}
 library("boot")
+set.seed(3245786)
 #fit model 1 with age and area
 mod_cv_1 <- glm(log(price) ~ age + area, data = housing_data)
 summary(mod_cv_1)
@@ -116,19 +124,28 @@ err_cv_2 <- cv.glm(housing_data, mod_cv_2, K=5)$delta[1]
 err_cv_2
 ```
 
-###  Questions: 
-* Use ``names(housing_data)'' to see all the possible covariates you could use.
-* Implement 5-fold cross-validation again to choose the covariates in housing_data that you believe might be associated with the house price. Fit new model and compare the error with the results above. Can you find a better one? Given the set of covariates, can you try to search through all possible models to find the best one? 
+### Questions:
 
-#  Penalized Scores
-Cross validation can be computationally expensive, since it requires refitting the model on many different ``test sets.'' On Wednesday, we will discuss potential alternatives to cross validation which don't require sample splitting and only fit the model once. In particular, they assign a score to each model, but explicitly include a penalty for more complex models. In particular, the two scores we will discuss are AIC (Akaike information criterion) and BIC (Bayesian information criterion).
+-   Use \`\`names(housing_data)'' to see all the possible covariates you could use.
 
-1. $R^2$ measures how well the fitted model predicts the data it was fitted on, and will always increase when we include additional covariates. 
+-   Implement 5-fold cross-validation again to choose the covariates in housing_data that you believe might be associated with the house price. Fit new model and compare the error with the results above. Can you find a better one? Given the set of covariates, can you try to search through all possible models to find the best one?
 
-2. Adjusted $R^2$ add adjustment to penalize for increasing model complexity, but it is still not good enough. 
+    ```{r}
+    #fit model 2 with age, area and lot
+    mod_cv_3 <- glm(log(price) ~ quality + bed + age, data = housing_data)
+    err_cv_3 <- cv.glm(housing_data, mod_cv_3, K=5)$delta[1]
+    err_cv_3
+    ```
 
-3. AIC, BIC require model assumptions to be theoretically grounded, but work
-well empirically even when the assumptions don’t hold. 
+# Penalized Scores
+
+Cross validation can be computationally expensive, since it requires refitting the model on many different \`\`test sets.'' On Wednesday, we will discuss potential alternatives to cross validation which don't require sample splitting and only fit the model once. In particular, they assign a score to each model, but explicitly include a penalty for more complex models. In particular, the two scores we will discuss are AIC (Akaike information criterion) and BIC (Bayesian information criterion).
+
+1.  $R^2$ measures how well the fitted model predicts the data it was fitted on, and will always increase when we include additional covariates.
+
+2.  Adjusted $R^2$ add adjustment to penalize for increasing model complexity, but it is still not good enough.
+
+3.  AIC, BIC require model assumptions to be theoretically grounded, but work well empirically even when the assumptions don't hold.
 
 Penalized Scores are calculated based on the whole dataset. Next we will use 3 models to compare the choice of the "best" one among three using different model selection criteria. Similar to golf, when R calculates AIC and BIC, a smaller score indicates a better model.
 
@@ -182,9 +199,7 @@ rbind(name, r_squared, adj_r_squared, aic, bic, cv_error)
 ```
 
 #### Questions
-1. Compare the different criterions above, which model do you think is the best?
 
-2. Suppose you have chosen the best one among the three, is that possible we could find a better one other than these three models? 
+1.  Compare the different criteria above, which model do you think is the best?
 
-
-
+2.  Suppose you have chosen the best one among the three, is it possible we could find a better one other than these three models?
